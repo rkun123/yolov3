@@ -1,6 +1,7 @@
 import argparse
 import time
 from pathlib import Path
+from utils.time_measure import MeasureTime
 
 import cv2
 import torch
@@ -64,6 +65,8 @@ def detect(opt):
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
 
+        t = MeasureTime('predict')
+
         # Inference
         t1 = time_synchronized()
         pred = model(img, augment=opt.augment)[0]
@@ -72,6 +75,8 @@ def detect(opt):
         pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres, opt.classes, opt.agnostic_nms,
                                    max_det=opt.max_det)
         t2 = time_synchronized()
+
+        t.stop()
 
         # Apply Classifier
         if classify:

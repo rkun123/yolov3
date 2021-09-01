@@ -24,6 +24,8 @@ from tqdm import tqdm
 from utils.general import check_requirements, xyxy2xywh, xywh2xyxy, xywhn2xyxy, xyn2xy, segment2box, segments2boxes, \
     resample_segments, clean_str
 from utils.torch_utils import torch_distributed_zero_first
+from utils.time_measure import MeasureTime
+import json
 
 # Parameters
 help_url = 'https://github.com/ultralytics/yolov3/wiki/Train-Custom-Data'
@@ -161,6 +163,8 @@ class LoadImages:  # for inference
             raise StopIteration
         path = self.files[self.count]
 
+        t = MeasureTime('Read image/video')
+
         if self.video_flag[self.count]:
             # Read video
             self.mode = 'video'
@@ -181,16 +185,25 @@ class LoadImages:  # for inference
         else:
             # Read image
             self.count += 1
+            t1 = MeasureTime('cv2.imgread(path)')
             img0 = cv2.imread(path)  # BGR
+            t1.stop()
             assert img0 is not None, 'Image Not Found ' + path
             print(f'image {self.count}/{self.nf} {path}: ', end='')
 
+        t.stop()
+
         # Padded resize
+        t = MeasureTime('Padded resize')
         img = letterbox(img0, self.img_size, stride=self.stride)[0]
+        t.stop()
 
         # Convert
+        t = MeasureTime('Convert')
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
+        t.stop()
+
 
         return path, img, img0, self.cap
 
@@ -249,11 +262,15 @@ class LoadWebcam:  # for inference
         print(f'webcam {self.count}: ', end='')
 
         # Padded resize
+        t = MeasureTime('Padded resize')
         img = letterbox(img0, self.img_size, stride=self.stride)[0]
+        t.stop()
 
         # Convert
+        t = MeasureTime('Convert')
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
+        t.stop()
 
         return img_path, img, img0, None
 
